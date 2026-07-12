@@ -62,4 +62,3 @@ Tab:CreateToggle({
         end)
     end,
 })
-
