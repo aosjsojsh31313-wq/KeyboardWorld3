@@ -1,41 +1,65 @@
--- إعدادات السرعة (يمكنك تعديل الرقم 300 لأي قيمة تريدها، بحد أقصى 300)
-local _G_TweenSpeed = 300 
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+local Window = Rayfield:CreateWindow({Name = "🏆 AI Keyboard Master - احتراف", Theme = "Default"})
+local Tab = Window:CreateTab("🤖 المساعد الذكي", nil)
 
--- حماية الموت الأبدية (تشتغل تلقائياً فور تنفيذ السكربت)
-local player = game.Players.LocalPlayer
-local function enableGodMode()
-    if player.Character and player.Character:FindFirstChild("Humanoid") then
-        player.Character.Humanoid.HealthChanged:Connect(function()
-            player.Character.Humanoid.Health = 1000 
-        end)
-    end
-end
-enableGodMode()
-player.CharacterAdded:Connect(enableGodMode)
+_G.AutoFarm = false
+_G.TargetCup = nil
 
--- نظام المسح والتحرك الذكي
-task.spawn(function()
-    while true do
-        local found = false
-        -- يقوم السكربت بمسح ملفات العالم الحالي بحثاً عن أي كائن اسمه يحتوي على "Win"
-        for _, obj in pairs(game.Workspace:GetDescendants()) do
-            if obj:IsA("BasePart") and obj:FindFirstChild("TouchInterest") 
-               and string.find(obj.Name:lower(), "win") then -- يقرأ أي شيء اسمه فيه كلمة Win
-                
-                local TweenService = game:GetService("TweenService")
-                local char = player.Character
-                if char and char:FindFirstChild("HumanoidRootPart") then
-                    local dist = (char.HumanoidRootPart.Position - obj.Position).Magnitude
-                    -- الحركة تعتمد على السرعة التي حددتها في _G_TweenSpeed
-                    local info = TweenInfo.new(dist / _G_TweenSpeed, Enum.EasingStyle.Linear)
-                    local tween = TweenService:Create(char.HumanoidRootPart, info, {CFrame = obj.CFrame})
-                    tween:Play()
-                    tween.Completed:Wait()
-                    found = true
-                end
-            end
+-- 1. نظام الذكاء الاصطناعي لقراءة الكؤوس
+local function GetAvailableCups()
+    local cups = {}
+    for _, obj in pairs(game.Workspace:GetDescendants()) do
+        if obj:IsA("BasePart") and obj:FindFirstChild("TouchInterest") and string.find(obj.Name:lower(), "win") then
+            cups[obj.Name] = obj.Name
         end
-        if not found then task.wait(1) end
-        task.wait(0.1)
     end
+    return cups
+end
+
+-- 2. حماية الموت الأبدية (God Mode)
+local player = game.Players.LocalPlayer
+player.CharacterAdded:Connect(function(char)
+    char:WaitForChild("Humanoid").HealthChanged:Connect(function(health)
+        if health < 100 then char.Humanoid.Health = 1000 end
+    end)
 end)
+
+-- 3. الواجهة (GUI)
+local Dropdown = Tab:CreateDropdown({
+   Name = "اختر الكأس المراد تجميعه",
+   Options = GetAvailableCups(),
+   Callback = function(Option) _G.TargetCup = Option end,
+})
+
+Tab:CreateToggle({
+    Name = "تفعيل المسار الدقيق (الكأس -> البداية)",
+    CurrentValue = false,
+    Callback = function(Value)
+        _G.AutoFarm = Value
+        task.spawn(function()
+            while _G.AutoFarm do
+                if _G.TargetCup then
+                    local target = nil
+                    for _, obj in pairs(game.Workspace:GetDescendants()) do
+                        if obj.Name == _G.TargetCup then target = obj break end
+                    end
+                    
+                    if target then
+                        local TweenService = game:GetService("TweenService")
+                        local char = player.Character
+                        -- التحرك للكأس
+                        local tween1 = TweenService:Create(char.HumanoidRootPart, TweenInfo.new(1), {CFrame = target.CFrame})
+                        tween1:Play()
+                        tween1.Completed:Wait()
+                        -- العودة للبداية
+                        local tween2 = TweenService:Create(char.HumanoidRootPart, TweenInfo.new(1), {CFrame = CFrame.new(0, 5, 0)})
+                        tween2:Play()
+                        tween2.Completed:Wait()
+                    end
+                end
+                task.wait(0.1)
+            end
+        end)
+    end,
+})
+
