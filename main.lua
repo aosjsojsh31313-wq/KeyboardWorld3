@@ -1,14 +1,25 @@
 -- تحميل مكتبة Rayfield
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
-
-local Window = Rayfield:CreateWindow({Name = "🏆 AI Keyboard Master - نظام الأمان", Theme = "Default"})
-local Tab = Window:CreateTab("⚙️ التجميع الآمن", nil)
+local Window = Rayfield:CreateWindow({Name = "🏆 AI Keyboard Master - احترافي", Theme = "Default"})
+local Tab = Window:CreateTab("⚙️ التجميع الآلي", nil)
 
 _G.AutoFarm = false
+_G.TweenSpeed = 150 -- السرعة الافتراضية
 
--- تفعيل التجميع بالحركة الطبيعية (بدون Teleport لتجنب الباند)
+-- مُحدد سرعة التوجيه (Tween Speed) - كما في الفيديو
+Tab:CreateSlider({
+   Name = "سرعة التوجه (Tween Speed)",
+   Range = {0, 230},
+   Increment = 10,
+   CurrentValue = 150,
+   Callback = function(Value)
+      _G.TweenSpeed = Value
+   end,
+})
+
+-- تفعيل التجميع التلقائي (Auto Farm Wins)
 Tab:CreateToggle({
-   Name = "تفعيل التجميع (مشي طبيعي)",
+   Name = "تفعيل التجميع (Auto Farm)",
    CurrentValue = false,
    Callback = function(Value)
        _G.AutoFarm = Value
@@ -17,27 +28,16 @@ Tab:CreateToggle({
                while _G.AutoFarm do
                    pcall(function()
                        local player = game.Players.LocalPlayer
-                       local character = player.Character
-                       local humanoid = character:FindFirstChild("Humanoid")
-                       
-                       -- البحث عن أقرب كأس
-                       local closestCup = nil
-                       local minDistance = math.huge
-                       
+                       -- البحث عن أي "كأس" (Cup) في الماب
                        for _, obj in pairs(game.Workspace:GetDescendants()) do
-                           if obj:IsA("BasePart") and obj:FindFirstChild("TouchInterest") then
-                               local distance = (character.HumanoidRootPart.Position - obj.Position).Magnitude
-                               if distance < minDistance then
-                                   minDistance = distance
-                                   closestCup = obj
-                               end
+                           if obj:IsA("BasePart") and obj.Name:find("Cup") then -- تعديل الاسم حسب الماب
+                               -- تنفيذ الحركة (Tween) بالسرعة المحددة
+                               local TweenService = game:GetService("TweenService")
+                               local info = TweenInfo.new((player:DistanceFromCharacter(obj.Position) / _G.TweenSpeed), Enum.EasingStyle.Linear)
+                               local tween = TweenService:Create(player.Character.HumanoidRootPart, info, {CFrame = obj.CFrame})
+                               tween:Play()
+                               tween.Completed:Wait()
                            end
-                       end
-                       
-                       -- التحرك نحو الكأس (مشي طبيعي)
-                       if closestCup and humanoid then
-                           humanoid:MoveTo(closestCup.Position)
-                           task.wait(0.5) -- سرعة التحرك
                        end
                    end)
                    task.wait(0.1)
@@ -46,6 +46,3 @@ Tab:CreateToggle({
        end
    end,
 })
-
-Tab:CreateButton({Name = "إيقاف التجميع", Callback = function() _G.AutoFarm = false end})
-
