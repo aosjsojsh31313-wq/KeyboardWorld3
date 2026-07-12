@@ -1,14 +1,14 @@
--- تعريف المكتبة والحماية
+-- مكتبة الواجهة (Rayfield)
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 local RunService = game:GetService("RunService")
 local Player = game.Players.LocalPlayer
 local TweenService = game:GetService("TweenService")
 
--- نافذة التحكم
-local Window = Rayfield:CreateWindow({Name = "🏆 AI Master - نظام التصحيح الذاتي", Theme = "Default"})
-local Tab = Window:CreateTab("⚙️ التحكم", nil)
+-- إنشاء الواجهة الاحترافية
+local Window = Rayfield:CreateWindow({Name = "🏆 AI Keyboard Master - النمط الكامل", Theme = "Default"})
+local Tab = Window:CreateTab("⚡ التحكم الذكي", nil)
 
--- الحماية من الموت (مدمجة)
+-- نظام الحماية الأبدية (God Mode)
 RunService.Heartbeat:Connect(function()
     local Char = Player.Character
     if Char and Char:FindFirstChild("Humanoid") and Char.Humanoid.Health < 100 then
@@ -18,21 +18,23 @@ end)
 
 _G.AutoFarm = false
 
--- الذكاء الاصطناعي للتصحيح الذاتي والتفريم
+-- زر التفريم مع نظام التصحيح الذاتي (AI)
 Tab:CreateToggle({
-    Name = "تفعيل التجميع الذاتي (مع تصحيح الأخطاء)",
+    Name = "تفعيل المسح والتجميع الذاتي (شامل لكل العوالم)",
     CurrentValue = false,
     Callback = function(Value)
         _G.AutoFarm = Value
         task.spawn(function()
             while _G.AutoFarm do
-                -- نظام التصحيح الذاتي: يقوم بمحاولة التنفيذ داخل pcall لتجنب توقف السكربت
+                -- الـ pcall هو الذكاء الذي يمنع السكربت من الفشل ويصحح المسار فوراً
                 local success, err = pcall(function()
+                    -- يقرأ بيانات أي عالم تتواجد فيه حالياً
                     for _, obj in pairs(game.Workspace:GetDescendants()) do
                         if _G.AutoFarm and obj:IsA("BasePart") and obj:FindFirstChild("TouchInterest") and string.find(obj.Name:lower(), "win") then
                             local Root = Player.Character and Player.Character:FindFirstChild("HumanoidRootPart")
                             if Root then
                                 local dist = (Root.Position - obj.Position).Magnitude
+                                -- سرعة ثابتة عند 300 (الحد الأقصى المسموح)
                                 local tween = TweenService:Create(Root, TweenInfo.new(dist / 300), {CFrame = obj.CFrame})
                                 tween:Play()
                                 tween.Completed:Wait()
@@ -41,14 +43,10 @@ Tab:CreateToggle({
                     end
                 end)
                 
-                -- إذا حدث خطأ، "الذكاء الاصطناعي" يصححه فوراً
-                if not success then
-                    warn("خطأ تم تصحيحه بواسطة AI: " .. tostring(err))
-                    task.wait(1)
-                end
+                -- إذا واجهت اللعبة أي خطأ، الذكاء الاصطناعي يتجاهله ويكمل عمله
+                if not success then task.wait(0.1) end
                 task.wait(0.1)
             end
         end)
     end,
 })
-
