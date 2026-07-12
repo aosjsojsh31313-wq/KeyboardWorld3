@@ -1,53 +1,84 @@
--- مكتبة Fluent للواجهة الفخمة
-local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
+-- // نظام العقول الثلاثة - الواجهة الاحترافية //
 local Player = game.Players.LocalPlayer
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
 
--- إنشاء الواجهة
-local Window = Fluent:CreateWindow({Title = "AI Auto-Farmer Pro", SubTitle = "الوضع الخفي", TabWidth = 160, Size = UDim2.fromOffset(500, 300), Theme = "Dark"})
-local Tab = Window:AddTab({ Title = "التحكم", Icon = "" })
+-- [1] إنشاء الواجهة (من الصفر بدون مكتبات)
+local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
+local MainFrame = Instance.new("Frame", ScreenGui)
+MainFrame.Size = UDim2.new(0, 300, 0, 400)
+MainFrame.Position = UDim2.new(0.5, -150, 0.5, -200)
+MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+MainFrame.BackgroundTransparency = 0.2
+MainFrame.Active = true
+MainFrame.Draggable = true
 
--- متغيرات النظام
-_G.AutoFarm = false
-_G.CollectedCount = 0
-
--- حماية ضد الموت
-local function MakeImmortal()
-    local Hum = Player.Character and Player.Character:FindFirstChild("Humanoid")
-    if Hum then
-        Hum:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
-        Hum.Health = 1000
+-- حواف الريمبو
+local Border = Instance.new("UIStroke", MainFrame)
+Border.Thickness = 3
+task.spawn(function()
+    while true do
+        for i = 0, 1, 0.01 do
+            Border.Color = Color3.fromHSV(i, 1, 1)
+            task.wait(0.05)
+        end
     end
-end
-MakeImmortal()
-Player.CharacterAdded:Connect(MakeImmortal)
+end)
 
--- عداد الكؤوس
-local Label = Tab:AddLabel("الكؤوس التي تم تجميعها: 0")
+-- شاشة الترحيب
+local WelcomeLabel = Instance.new("TextLabel", ScreenGui)
+WelcomeLabel.Size = UDim2.new(1, 0, 1, 0)
+WelcomeLabel.Text = "مرحباً بكم في سكربت كيبورد الخالد"
+WelcomeLabel.TextColor3 = Color3.new(1, 1, 1)
+WelcomeLabel.BackgroundTransparency = 1
+WelcomeLabel.TextSize = 40
+task.wait(2)
+WelcomeLabel:Destroy()
 
--- الذكاء الاصطناعي الخفي (يقرأ العالم تلقائياً)
-Tab:AddToggle("AutoFarm", {Title = "تفعيل التفريم التلقائي (ذكي)", Callback = function(Value)
-    _G.AutoFarm = Value
-    if Value then
-        task.spawn(function()
-            while _G.AutoFarm do
-                -- البحث عن أي كأس في العالم الحالي (سواء عالم 1 أو 2 أو 3)
-                for _, obj in pairs(game.Workspace:GetDescendants()) do
-                    if _G.AutoFarm and obj:IsA("BasePart") and (string.find(obj.Name:lower(), "win") or string.find(obj.Name:lower(), "cup")) then
-                        local Hum = Player.Character and Player.Character:FindFirstChild("Humanoid")
-                        if Hum then
-                            -- المشي للمسار الصحيح
-                            Hum:MoveTo(obj.Position)
-                            Hum.MoveToFinished:Wait()
-                            _G.CollectedCount = _G.CollectedCount + 1
-                            Label:SetText("الكؤوس التي تم تجميعها: " .. _G.CollectedCount)
-                            task.wait(0.5)
-                        end
-                    end
+-- [2] العقول الثلاثة (منطق العمل)
+local Brains = {
+    Scanner = function() -- العقل الماسح
+        local Targets = {}
+        for _, obj in pairs(workspace:GetDescendants()) do
+            if obj:IsA("BasePart") and obj:FindFirstChild("TouchInterest") then
+                if obj.Name:lower():find("win") or obj.Name:lower():find("cup") then
+                    table.insert(Targets, obj)
                 end
-                task.wait(1)
             end
-        end)
+        end
+        return Targets
+    end,
+    Protector = function() -- عقل الحماية
+        local Hum = Player.Character:FindFirstChild("Humanoid")
+        if Hum then Hum.Health = 1000 end
+    end,
+    Executor = function(target) -- عقل التنفيذ
+        Player.Character.Humanoid:MoveTo(target.Position)
     end
-end})
+}
 
-Fluent:Notify({Title = "النظام يعمل", Content = "تم تحديد العالم تلقائياً والبدء بالتفريم", Duration = 3})
+-- [3] الأزرار لكل عقل
+local function CreateButton(name, callback)
+    local btn = Instance.new("TextButton", MainFrame)
+    btn.Size = UDim2.new(0.8, 0, 0, 40)
+    btn.Text = name
+    btn.MouseButton1Click:Connect(callback)
+end
+
+CreateButton("تفعيل العقل الماسح", function() 
+    print("العقل الماسح يعمل.. جاري قراءة الكؤوس") 
+end)
+
+CreateButton("تفعيل العقل المنفذ", function()
+    task.spawn(function()
+        while true do
+            Brains.Protector()
+            local targets = Brains.Scanner()
+            for _, t in pairs(targets) do
+                Brains.Executor(t)
+                Player.Character.Humanoid.MoveToFinished:Wait()
+            end
+            task.wait(1)
+        end
+    end)
+end)
