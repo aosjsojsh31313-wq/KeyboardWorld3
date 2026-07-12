@@ -1,41 +1,44 @@
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
-local Window = Rayfield:CreateWindow({Name = "🏆 AI Keyboard Master - نسخة محترفة", Theme = "Default"})
+local Window = Rayfield:CreateWindow({Name = "🏆 AI Keyboard Master - تحديث العوالم", Theme = "Default"})
 local Tab = Window:CreateTab("⚙️ الإعدادات المتقدمة", nil)
 
 _G.AutoFarm = false
-_G.TweenSpeed = 150 
-_G.AntiDeath = false
+_G.TweenSpeed = 300 -- تم تحديد الحد الأقصى للسرعة بـ 300 كما طلبت
+_G.TargetCup = "1" -- القيمة الافتراضية
 
--- اختيار قيمة الكأس
-local CupDropdown = Tab:CreateDropdown({
-   Name = "اختر قيمة الكأس المستهدف",
+-- اختيار قيمة الكأس حسب الماب (يغطي العوالم 1-3)
+Tab:CreateDropdown({
+   Name = "اختر قيمة الكأس",
    Options = {"1", "50", "150", "1000", "150k"},
    CurrentOption = "1",
    Callback = function(Option) _G.TargetCup = Option end,
 })
 
--- التحكم في سرعة Tween
+-- ضبط السرعة (لا تتجاوز 300)
 Tab:CreateSlider({
-   Name = "سرعة التجميع (Tween Speed)",
-   Range = {100, 1000},
-   Increment = 50,
+   Name = "سرعة التجميع (الحد الأقصى 300)",
+   Range = {50, 300},
+   Increment = 10,
    CurrentValue = 150,
    Callback = function(Value) _G.TweenSpeed = Value end,
 })
 
--- زر الحماية من الموت
+-- حماية من الموت (بشكل فعلي)
 Tab:CreateToggle({
-   Name = "حماية من الموت (Anti-Death)",
+   Name = "الحماية من الموت (Anti-Death)",
    CurrentValue = false,
    Callback = function(Value)
        _G.AntiDeath = Value
        if _G.AntiDeath then
-           game.Players.LocalPlayer.Character.Humanoid.Health = 1000000 -- رفع الصحة
+           -- تجميد الصحة لمنع الموت
+           game.Players.LocalPlayer.Character.Humanoid.HealthChanged:Connect(function()
+               if _G.AntiDeath then game.Players.LocalPlayer.Character.Humanoid.Health = 1000 end
+           end)
        end
    end,
 })
 
--- تفعيل التجميع الآلي الذكي
+-- التجميع التلقائي الذكي للعوالم
 Tab:CreateToggle({
    Name = "تفعيل التجميع الآلي",
    CurrentValue = false,
@@ -43,16 +46,18 @@ Tab:CreateToggle({
        _G.AutoFarm = Value
        task.spawn(function()
            while _G.AutoFarm do
-               for _, obj in pairs(game.Workspace:GetDescendants()) do
-                   if obj:IsA("BasePart") and obj:FindFirstChild("TouchInterest") and string.find(obj.Name, _G.TargetCup or "") then
+               -- السكربت الآن يبحث في كل Workspace للتعرف على أي كأس يظهر في أي عالم
+               for _, v in pairs(game.Workspace:GetDescendants()) do
+                   if _G.AutoFarm and v:IsA("BasePart") and v:FindFirstChild("TouchInterest") and string.find(v.Name, _G.TargetCup) then
                        local TweenService = game:GetService("TweenService")
-                       local info = TweenInfo.new((game.Players.LocalPlayer:DistanceFromCharacter(obj.Position) / _G.TweenSpeed), Enum.EasingStyle.Linear)
-                       local tween = TweenService:Create(game.Players.LocalPlayer.Character.HumanoidRootPart, info, {CFrame = obj.CFrame})
+                       local speed = _G.TweenSpeed
+                       local dist = (game.Players.LocalPlayer.Character.HumanoidRootPart.Position - v.Position).Magnitude
+                       local tween = TweenService:Create(game.Players.LocalPlayer.Character.HumanoidRootPart, TweenInfo.new(dist / speed), {CFrame = v.CFrame})
                        tween:Play()
                        tween.Completed:Wait()
                    end
                end
-               task.wait(0.5)
+               task.wait(0.1)
            end
        end)
    end,
