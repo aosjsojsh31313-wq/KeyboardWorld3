@@ -1,48 +1,48 @@
--- تحميل مكتبة Rayfield
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 local Window = Rayfield:CreateWindow({Name = "🏆 AI Keyboard Master - احترافي", Theme = "Default"})
-local Tab = Window:CreateTab("⚙️ التجميع الآلي", nil)
+local Tab = Window:CreateTab("⚙️ التجميع التلقائي", nil)
 
 _G.AutoFarm = false
-_G.TweenSpeed = 150 -- السرعة الافتراضية
+_G.TweenSpeed = 150 -- السرعة هنا تتحكم في سرعة التجميع
 
--- مُحدد سرعة التوجيه (Tween Speed) - كما في الفيديو
 Tab:CreateSlider({
-   Name = "سرعة التوجه (Tween Speed)",
-   Range = {0, 230},
+   Name = "سرعة التجميع (Tween Speed)",
+   Range = {100, 500},
    Increment = 10,
    CurrentValue = 150,
-   Callback = function(Value)
-      _G.TweenSpeed = Value
-   end,
+   Callback = function(Value) _G.TweenSpeed = Value end,
 })
 
--- تفعيل التجميع التلقائي (Auto Farm Wins)
 Tab:CreateToggle({
-   Name = "تفعيل التجميع (Auto Farm)",
+   Name = "تفعيل التجميع السريع (Auto Farm)",
    CurrentValue = false,
    Callback = function(Value)
        _G.AutoFarm = Value
        if _G.AutoFarm then
            task.spawn(function()
                while _G.AutoFarm do
-                   pcall(function()
-                       local player = game.Players.LocalPlayer
-                       -- البحث عن أي "كأس" (Cup) في الماب
+                   local character = game.Players.LocalPlayer.Character
+                   local root = character and character:FindFirstChild("HumanoidRootPart")
+                   
+                   if root then
                        for _, obj in pairs(game.Workspace:GetDescendants()) do
-                           if obj:IsA("BasePart") and obj.Name:find("Cup") then -- تعديل الاسم حسب الماب
-                               -- تنفيذ الحركة (Tween) بالسرعة المحددة
+                           -- هذا الجزء يبحث عن الكؤوس (يتأكد أن الكائن له ميزة اللمس)
+                           if _G.AutoFarm and obj:IsA("BasePart") and obj:FindFirstChild("TouchInterest") then
+                               local distance = (root.Position - obj.Position).Magnitude
+                               local speed = _G.TweenSpeed
+                               local time = distance / speed
+                               
                                local TweenService = game:GetService("TweenService")
-                               local info = TweenInfo.new((player:DistanceFromCharacter(obj.Position) / _G.TweenSpeed), Enum.EasingStyle.Linear)
-                               local tween = TweenService:Create(player.Character.HumanoidRootPart, info, {CFrame = obj.CFrame})
+                               local tween = TweenService:Create(root, TweenInfo.new(time, Enum.EasingStyle.Linear), {CFrame = obj.CFrame})
                                tween:Play()
                                tween.Completed:Wait()
                            end
                        end
-                   end)
+                   end
                    task.wait(0.1)
                end
            end)
        end
    end,
 })
+
