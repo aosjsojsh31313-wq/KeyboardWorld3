@@ -1,65 +1,67 @@
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
-local Window = Rayfield:CreateWindow({Name = "🏆 AI Keyboard Master - تحديث العوالم", Theme = "Default"})
-local Tab = Window:CreateTab("⚙️ الإعدادات المتقدمة", nil)
+local Window = Rayfield:CreateWindow({Name = "🏆 AI Keyboard Master - نظام المسح الذكي", Theme = "Default"})
+local Tab = Window:CreateTab("🤖 المساعد الذكي", nil)
 
 _G.AutoFarm = false
-_G.TweenSpeed = 300 -- تم تحديد الحد الأقصى للسرعة بـ 300 كما طلبت
-_G.TargetCup = "1" -- القيمة الافتراضية
+_G.TargetObject = nil
 
--- اختيار قيمة الكأس حسب الماب (يغطي العوالم 1-3)
-Tab:CreateDropdown({
-   Name = "اختر قيمة الكأس",
-   Options = {"1", "50", "150", "1000", "150k"},
-   CurrentOption = "1",
-   Callback = function(Option) _G.TargetCup = Option end,
+-- نظام قراءة البيانات (يقرأ الكؤوس الموجودة فعلياً في اللعبة)
+local function ScanForCups()
+    local cups = {}
+    for _, obj in pairs(game.Workspace:GetDescendants()) do
+        if obj:IsA("BasePart") and obj:FindFirstChild("TouchInterest") then
+            -- يتم التعرف على الكؤوس وترتيبها برمجياً
+            table.insert(cups, obj.Name)
+        end
+    end
+    return cups
+end
+
+-- حماية الموت الفورية
+local player = game.Players.LocalPlayer
+player.CharacterAdded:Connect(function(char)
+    char:WaitForChild("Humanoid").HealthChanged:Connect(function(health)
+        if health < 100 then char.Humanoid.Health = 1000 end
+    end)
+end)
+
+-- قائمة اختيار ذكية تعتمد على بيانات الماب الحالية
+local CupDropdown = Tab:CreateDropdown({
+   Name = "اختر الكأس المراد تجميعه",
+   Options = ScanForCups(),
+   Callback = function(Option) _G.TargetName = Option end,
 })
 
--- ضبط السرعة (لا تتجاوز 300)
-Tab:CreateSlider({
-   Name = "سرعة التجميع (الحد الأقصى 300)",
-   Range = {50, 300},
-   Increment = 10,
-   CurrentValue = 150,
-   Callback = function(Value) _G.TweenSpeed = Value end,
-})
-
--- حماية من الموت (بشكل فعلي)
 Tab:CreateToggle({
-   Name = "الحماية من الموت (Anti-Death)",
-   CurrentValue = false,
-   Callback = function(Value)
-       _G.AntiDeath = Value
-       if _G.AntiDeath then
-           -- تجميد الصحة لمنع الموت
-           game.Players.LocalPlayer.Character.Humanoid.HealthChanged:Connect(function()
-               if _G.AntiDeath then game.Players.LocalPlayer.Character.Humanoid.Health = 1000 end
-           end)
-       end
-   end,
+    Name = "تفعيل المسار الدقيق (حركة الكأس ثم البداية)",
+    CurrentValue = false,
+    Callback = function(Value)
+        _G.AutoFarm = Value
+        task.spawn(function()
+            while _G.AutoFarm do
+                local target = nil
+                -- البحث عن الكأس المختار
+                for _, obj in pairs(game.Workspace:GetDescendants()) do
+                    if obj.Name == _G.TargetName then target = obj break end
+                end
+                
+                if target then
+                    local startPos = Vector3.new(0, 0, 0) -- موقع البداية (يمكنك تعديله)
+                    local TweenService = game:GetService("TweenService")
+                    local char = game.Players.LocalPlayer.Character
+                    
+                    -- 1. الذهاب للكأس
+                    local tween1 = TweenService:Create(char.HumanoidRootPart, TweenInfo.new(1), {CFrame = target.CFrame})
+                    tween1:Play()
+                    tween1.Completed:Wait()
+                    
+                    -- 2. الرجوع للبداية
+                    local tween2 = TweenService:Create(char.HumanoidRootPart, TweenInfo.new(1), {CFrame = CFrame.new(startPos)})
+                    tween2:Play()
+                    tween2.Completed:Wait()
+                end
+                task.wait(0.5)
+            end
+        end)
+    end,
 })
-
--- التجميع التلقائي الذكي للعوالم
-Tab:CreateToggle({
-   Name = "تفعيل التجميع الآلي",
-   CurrentValue = false,
-   Callback = function(Value)
-       _G.AutoFarm = Value
-       task.spawn(function()
-           while _G.AutoFarm do
-               -- السكربت الآن يبحث في كل Workspace للتعرف على أي كأس يظهر في أي عالم
-               for _, v in pairs(game.Workspace:GetDescendants()) do
-                   if _G.AutoFarm and v:IsA("BasePart") and v:FindFirstChild("TouchInterest") and string.find(v.Name, _G.TargetCup) then
-                       local TweenService = game:GetService("TweenService")
-                       local speed = _G.TweenSpeed
-                       local dist = (game.Players.LocalPlayer.Character.HumanoidRootPart.Position - v.Position).Magnitude
-                       local tween = TweenService:Create(game.Players.LocalPlayer.Character.HumanoidRootPart, TweenInfo.new(dist / speed), {CFrame = v.CFrame})
-                       tween:Play()
-                       tween.Completed:Wait()
-                   end
-               end
-               task.wait(0.1)
-           end
-       end)
-   end,
-})
-
