@@ -1,84 +1,53 @@
--- مكتبة Fluent الفخمة
+-- مكتبة Fluent للواجهة الفخمة
 local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
 local Player = game.Players.LocalPlayer
-local RunService = game:GetService("RunService")
 
 -- إنشاء الواجهة
-local Window = Fluent:CreateWindow({
-    Title = "🏆 AI Master Pro - الخالد",
-    SubTitle = "نظام القراءة والتحكم الفخم",
-    TabWidth = 160,
-    Size = UDim2.fromOffset(580, 460),
-    Theme = "Dark",
-})
+local Window = Fluent:CreateWindow({Title = "AI Auto-Farmer Pro", SubTitle = "الوضع الخفي", TabWidth = 160, Size = UDim2.fromOffset(500, 300), Theme = "Dark"})
+local Tab = Window:AddTab({ Title = "التحكم", Icon = "" })
 
-local Tab = Window:AddTab({ Title = "🛡️ التحكم الآمن", Icon = "" })
+-- متغيرات النظام
+_G.AutoFarm = false
+_G.CollectedCount = 0
 
--- 1. الحماية المطلقة (خالد)
+-- حماية ضد الموت
 local function MakeImmortal()
-    local Char = Player.Character
-    if Char then
-        local Hum = Char:FindFirstChild("Humanoid")
-        if Hum then
-            Hum:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
-            Hum:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
-            Hum.Health = 1000
-            Hum.MaxHealth = 1000
-        end
+    local Hum = Player.Character and Player.Character:FindFirstChild("Humanoid")
+    if Hum then
+        Hum:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
+        Hum.Health = 1000
     end
 end
 MakeImmortal()
 Player.CharacterAdded:Connect(MakeImmortal)
 
--- 2. الذكاء الاصطناعي لقراءة الملفات
-_G.AutoFarm = false
-_G.TargetCup = nil
+-- عداد الكؤوس
+local Label = Tab:AddLabel("الكؤوس التي تم تجميعها: 0")
 
-local CupDropdown = Tab:AddDropdown("CupDropdown", {
-    Title = "اختر الكأس (قراءة حية للملفات)",
-    Values = {"جاري الفحص..."},
-    Callback = function(Value) _G.TargetCup = Value end
-})
-
-task.spawn(function()
-    while true do
-        local newOptions = {}
-        local descendants = game.Workspace:GetDescendants()
-        for i = 1, #descendants do
-            local obj = descendants[i]
-            if obj:IsA("BasePart") and obj:FindFirstChild("TouchInterest") and string.find(obj.Name:lower(), "win") then
-                table.insert(newOptions, obj.Name)
-            end
-        end
-        CupDropdown:SetValues(newOptions)
-        task.wait(2)
-    end
-end)
-
--- 3. تفعيل التفريم الآمن (مشياً)
-Tab:AddToggle("AutoFarmToggle", {
-    Title = "تفعيل التفريم الآمن (مستحيل الموت)",
-    Callback = function(Value)
-        _G.AutoFarm = Value
-        if Value then
-            task.spawn(function()
-                while _G.AutoFarm do
-                    if _G.TargetCup then
-                        for _, obj in pairs(game.Workspace:GetDescendants()) do
-                            if _G.AutoFarm and obj.Name == _G.TargetCup and obj:IsA("BasePart") then
-                                local Hum = Player.Character and Player.Character:FindFirstChild("Humanoid")
-                                if Hum then
-                                    Hum:MoveTo(obj.Position)
-                                    Hum.MoveToFinished:Wait()
-                                end
-                            end
+-- الذكاء الاصطناعي الخفي (يقرأ العالم تلقائياً)
+Tab:AddToggle("AutoFarm", {Title = "تفعيل التفريم التلقائي (ذكي)", Callback = function(Value)
+    _G.AutoFarm = Value
+    if Value then
+        task.spawn(function()
+            while _G.AutoFarm do
+                -- البحث عن أي كأس في العالم الحالي (سواء عالم 1 أو 2 أو 3)
+                for _, obj in pairs(game.Workspace:GetDescendants()) do
+                    if _G.AutoFarm and obj:IsA("BasePart") and (string.find(obj.Name:lower(), "win") or string.find(obj.Name:lower(), "cup")) then
+                        local Hum = Player.Character and Player.Character:FindFirstChild("Humanoid")
+                        if Hum then
+                            -- المشي للمسار الصحيح
+                            Hum:MoveTo(obj.Position)
+                            Hum.MoveToFinished:Wait()
+                            _G.CollectedCount = _G.CollectedCount + 1
+                            Label:SetText("الكؤوس التي تم تجميعها: " .. _G.CollectedCount)
+                            task.wait(0.5)
                         end
                     end
-                    task.wait(0.1)
                 end
-            end)
-        end
+                task.wait(1)
+            end
+        end)
     end
-})
+end})
 
-Fluent:Notify({Title = "تم التفعيل", Content = "نظام AI الخالد جاهز الآن!", Duration = 5})
+Fluent:Notify({Title = "النظام يعمل", Content = "تم تحديد العالم تلقائياً والبدء بالتفريم", Duration = 3})
